@@ -22,7 +22,7 @@ class InscriptionExtractor:
     def __init__(self, pdf_path):
         self.pdf_path = Path(pdf_path)
         self.data = {}
-        
+
     def extract_text_from_pdf(self):
         """Extrait le texte brut du PDF"""
         text = ""
@@ -162,7 +162,44 @@ class AmmonExcelGenerator:
     
     def __init__(self, template_path=None):
         self.template_path = template_path
+        self.pays_codes = self._load_pays_codes()
         
+    def _load_pays_codes(self):
+        """Charge les codes pays depuis l'onglet Pays du template"""
+        pays_map = {'FRANCE': 'FRA', 'France': 'FRA'}
+
+        if self.template_path and Path(self.template_path).exists():
+            try:
+                wb = openpyxl.load_workbook(self.template_path)
+                if 'Pays' in wb.sheetnames:
+                    ws_pays = wb['Pays']
+                    for row in ws_pays.iter_rows(min_row=2, values_only=True):
+                        if row[0] and row[1]:  # Code et Libellé
+                            code = str(row[0]).strip()
+                            libelle = str(row[1]).strip()
+                            pays_map[libelle] = code
+                            pays_map[libelle.upper()] = code
+            except:
+                pass
+
+        return pays_map
+
+    def get_pays_code(self, pays_libelle):
+        """Retourne le code pays (ex: FRANCE → FRA)"""
+        if not pays_libelle:
+            return 'FRA'
+
+        pays_libelle = pays_libelle.strip()
+
+        if pays_libelle in self.pays_codes:
+            return self.pays_codes[pays_libelle]
+
+        for key, value in self.pays_codes.items():
+            if key.upper() == pays_libelle.upper():
+                return value
+
+        return 'FRA'  # Par défaut
+
     def create_entreprise_excel(self, data, output_path):
         """Crée le fichier Excel d'import des entreprises"""
         
@@ -195,28 +232,28 @@ class AmmonExcelGenerator:
             siret = siret.replace(' ', '')  # Nettoyer le SIRET
         
         # Générer une référence externe unique basée sur le SIRET et timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        ref_ext = f"INBP_{siret}_{timestamp}" if siret else f"INBP_{timestamp}"
+        date_str = datetime.now().strftime('%Y%m%d')  # Format YYYYMMDD
+        ref_ext = f"INBP_{siret}_{date_str}" if siret else f"INBP_{date_str}"
         
         # Construire la ligne de données
         row_data = [
-            ref_ext,                                    # cRefExt (obligatoire)
-            0,                                          # iDesactive (0 = actif)
-            data.get('nom_entreprise', ''),            # SOC_cRaisonSociale (obligatoire)
-            'E',                                        # SOC_cType (E = Entreprise)
-            -1,                                         # SOC_iEstSiege (-1 = True)
-            '',                                         # SOC_cCateg (vide)
+            ref_ext,                                    # cRefExt - VERSION COURTE
+            0,                                          # iDesactive
+            data.get('nom_entreprise', ''),            # SOC_cRaisonSociale
+            'E',                                        # SOC_cType
+            -1,                                         # SOC_iEstSiege
+            'SGE',                                      # ← CHANGEMENT 1: était ''
             siret,                                      # SOC_cSIRET
             data.get('code_nafa', ''),                 # SOC_cNACE
-            -1,                                         # ADR_IESTADRCOURRIER (-1 = True)
-            'Siège',                                    # ADR_cAdresseNature
+            -1,                                         # ADR_IESTADRCOURRIER
+            'PR',                                       # ← CHANGEMENT 2: était 'Siège'
             data.get('adresse_entreprise', ''),        # ADR_cAdresse1
             '',                                         # ADR_cAdresse2
             '',                                         # ADR_cAdresse3
             '',                                         # ADR_cAdresse4
             data.get('code_postal', ''),               # ADR_cCodePostal
             data.get('ville', ''),                     # ADR_cVille
-            data.get('pays', 'FRANCE'),                # ADR_cPays
+            self.get_pays_code(data.get('pays')),      # ← CHANGEMENT 3: utiliser get_pays_code()
             '',                                         # ADR_cSiteWeb
             data.get('telephone', ''),                 # ADR_cTel
             data.get('email', ''),                     # ADR_cEmail
@@ -273,28 +310,28 @@ class AmmonExcelGenerator:
                 siret = siret.replace(' ', '')  # Nettoyer le SIRET
             
             # Générer une référence externe unique
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            ref_ext = f"INBP_{siret}_{timestamp}_{i:03d}" if siret else f"INBP_{timestamp}_{i:03d}"
+            date_str = datetime.now().strftime('%Y%m%d')  # Format YYYYMMDD
+            ref_ext = f"INBP_{siret}_{date_str}" if siret else f"INBP_{date_str}"
             
             # Construire la ligne de données
             row_data = [
-                ref_ext,                                    # cRefExt (obligatoire)
-                0,                                          # iDesactive (0 = actif)
-                data.get('nom_entreprise', ''),            # SOC_cRaisonSociale (obligatoire)
-                'E',                                        # SOC_cType (E = Entreprise)
-                -1,                                         # SOC_iEstSiege (-1 = True)
-                '',                                         # SOC_cCateg (vide)
+                ref_ext,                                    # cRefExt - VERSION COURTE
+                0,                                          # iDesactive
+                data.get('nom_entreprise', ''),            # SOC_cRaisonSociale
+                'E',                                        # SOC_cType
+                -1,                                         # SOC_iEstSiege
+                'SGE',                                      # ← CHANGEMENT 1: était ''
                 siret,                                      # SOC_cSIRET
                 data.get('code_nafa', ''),                 # SOC_cNACE
-                -1,                                         # ADR_IESTADRCOURRIER (-1 = True)
-                'Siège',                                    # ADR_cAdresseNature
+                -1,                                         # ADR_IESTADRCOURRIER
+                'PR',                                       # ← CHANGEMENT 2: était 'Siège'
                 data.get('adresse_entreprise', ''),        # ADR_cAdresse1
                 '',                                         # ADR_cAdresse2
                 '',                                         # ADR_cAdresse3
                 '',                                         # ADR_cAdresse4
                 data.get('code_postal', ''),               # ADR_cCodePostal
                 data.get('ville', ''),                     # ADR_cVille
-                data.get('pays', 'FRANCE'),                # ADR_cPays
+                self.get_pays_code(data.get('pays')),      # ← CHANGEMENT 3: utiliser get_pays_code()
                 '',                                         # ADR_cSiteWeb
                 data.get('telephone', ''),                 # ADR_cTel
                 data.get('email', ''),                     # ADR_cEmail
@@ -327,7 +364,7 @@ def main():
     )
     parser.add_argument('pdf_input', help='Chemin vers un fichier PDF ou un dossier contenant des PDFs')
     parser.add_argument('--output', '-o', default='.', help='Dossier de sortie pour le fichier Excel')
-    parser.add_argument('--template', '-t', help='Chemin vers le template Excel Ammon (optionnel)')
+    parser.add_argument('--template', '-t', help='Chemin vers le template Excel Ammon')
     
     args = parser.parse_args()
     
