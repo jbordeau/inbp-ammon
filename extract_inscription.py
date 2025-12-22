@@ -7,14 +7,18 @@ Usage: python3 extract_inscription.py <fichier_pdf> [--output <dossier_sortie>]
 """
 
 import sys
-import re
 import argparse
 from pathlib import Path
 from datetime import datetime
-import pypdf
 import openpyxl
 from openpyxl import Workbook
-from pygments.lexer import default
+import base64
+import json
+from mistralai import Mistral
+
+api_key = "imHoWyGyaX0hHFhyHYvA5rc1IuRsE9Ob"
+
+client = Mistral(api_key=api_key)
 
 
 class InscriptionExtractor:
@@ -24,139 +28,85 @@ class InscriptionExtractor:
         self.pdf_path = Path(pdf_path)
         self.data = {}
 
-    def extract_text_from_pdf(self):
-        """Extrait le texte brut du PDF"""
-        text = ""
+    def encode_file(self):
         with open(self.pdf_path, 'rb') as file:
-            pdf_reader = pypdf.PdfReader(file)
-            for page in pdf_reader.pages:
-                text += page.extract_text()
-        return text
+            return base64.b64encode(file.read()).decode('utf-8')
 
-    def parse_inscription_data(self, text):
-        """Parse les données du texte extrait"""
-        data = {}
-
-        # Recherche du SIRET (identifiant unique) pour localiser le bloc de données remplies
-        siret_match = re.search(r'(\d{14})', text)
-        if siret_match:
-            data['siret'] = siret_match.group(1)
-
-            # Trouver le contexte autour du SIRET (500 caractères avant pour capturer toutes les infos)
-            siret_pos = siret_match.start()
-            context_start = max(0, siret_pos - 500)
-            context_end = min(len(text), siret_pos + 200)
-            context = text[context_start:context_end]
-
-            # Parser les lignes dans le contexte
-            lines = [line.strip() for line in context.split('\n') if line.strip()]
-
-            for i, line in enumerate(lines):
-                # Nom (apparaît avant Stéphanie dans le contexte)
-                if line == 'Croisé' and not data.get('nom_stagiaire'):
-                    data['nom_stagiaire'] = line
-                    data['nom_entreprise'] = line  # Pour auto-entrepreneur
-
-                # Prénom
-                if line == 'Stéphanie' and not data.get('prenom_stagiaire'):
-                    data['prenom_stagiaire'] = line
-
-                # Adresse (ligne contenant "rue")
-                if 'rue' in line.lower() and not data.get('adresse_entreprise'):
-                    data['adresse_entreprise'] = line
-
-                # Code postal (5 chiffres seuls sur une ligne)
-                if re.match(r'^\d{5}$', line) and not data.get('code_postal'):
-                    data['code_postal'] = line
-
-                # Ville (après le code postal, ligne suivante)
-                if data.get('code_postal') and line == data['code_postal']:
-                    if i + 1 < len(lines):
-                        ville_candidate = lines[i + 1]
-                        if ville_candidate and not ville_candidate.isdigit() and len(ville_candidate) > 2:
-                            data['ville'] = ville_candidate
-
-                # Pays
-                if line in ['FRANCE', 'France', 'FRANCE  ']:
-                    data['pays'] = 'FRANCE'
-
-                # Téléphone (10 chiffres commençant par 0)
-                if re.match(r'^0\d{9}$', line) and not data.get('telephone'):
-                    data['telephone'] = line
-
-                # Email (contient @ et .)
-                email_match = re.search(r'([a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', line.replace(' ', ''))
-                if email_match and not data.get('email'):
-                    data['email'] = email_match.group(1)
-
-                # Date (format DD/MM/YYYY)
-                if re.match(r'^\d{2}/\d{2}/\d{4}$', line):
-                    # Date d'entrée dans l'entreprise
-                    if not data.get('date_entree_entreprise'):
-                        # Vérifier si c'est la date d'entrée (après la date de naissance généralement)
-                        if data.get('date_naissance'):
-                            data['date_entree_entreprise'] = line
-                        else:
-                            data['date_naissance'] = line
-                    elif not data.get('date_naissance'):
-                        data['date_naissance'] = line
-
-                # Code NAF (4 chiffres + 1 lettre)
-                if re.match(r'^\d{4}[A-Z]$', line) and not data.get('code_nafa'):
-                    data['code_nafa'] = line
-
-        # Si pas de SIRET trouvé, essayer une extraction plus large
-        if not data.get('siret'):
-            # Patterns alternatifs pour le cas où le format est différent
-            all_numbers = re.findall(r'\d{14}', text)
-            if all_numbers:
-                data['siret'] = all_numbers[0]
-
-        # Construction du nom complet de l'entreprise pour auto-entrepreneurs
-        if data.get('nom_stagiaire') and data.get('prenom_stagiaire'):
-            data['nom_entreprise'] = f"{data['prenom_stagiaire']} {data['nom_stagiaire']}"
-
-        # Valeurs par défaut pour les champs non trouvés
-        defaults = {
-            'nom_entreprise': None,
-            'adresse_entreprise': None,
-            'code_postal': None,
-            'ville': None,
-            'pays': 'FRANCE',
-            'siret': None,
-            'code_nafa': None,
-            'telephone': None,
-            'email': None,
-            'nom_stagiaire': None,
-            'prenom_stagiaire': None,
-            'date_naissance': None,
-            'date_entree_entreprise': None,
+    def call_mistral(self):
+        base64_file = self.encode_file()
+        return client.ocr.process(
+        model="mistral-ocr-latest",
+        pages=[0],
+        document={
+            "type": "document_url",
+            "document_url": f"data:application/pdf;base64,{base64_file}"
+        },
+        include_image_base64=False,
+        extract_footer=False,
+        extract_header=False,
+        document_annotation_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "response_schema",
+                "schema": {
+                    "type": "object",
+                    "title": "StructuredData",
+                    "required": [
+                        "nom de l'entreprise",
+                        "adresse de l'entreprise",
+                        "Code postal",
+                        "Ville",
+                        "Pays",
+                        "Date d'entrée dans l'entreprise",
+                        "Tél",
+                        "N° de SIRET",
+                        "Code NAFA",
+                        "Email"
+                    ],
+                    "properties": {
+                        "nom de l'entreprise": {
+                            "type": "string"
+                        },
+                        "adresse de l'entreprise": {
+                            "type": "string"
+                        },
+                        "Code postal": {
+                            "type": "string"
+                        },
+                        "Ville": {
+                            "type": "string",
+                        },
+                        "Pays": {
+                            "type": "string",
+                        },
+                        "Date d'entrée dans l'entreprise": {
+                            "type": "string",
+                        },
+                        "Tél": {
+                            "type": "string",
+                        },
+                        "N° de SIRET": {
+                            "type": "string",
+                        },
+                        "Code NAFA": {
+                            "type": "string",
+                        },
+                        "Email": {
+                            "type": "string",
+                        },
+                    }
+                }
+            }
         }
-
-        for key, default in defaults.items():
-            if key not in data:
-                data[key] = default
-
-        return data
+    )
 
     def extract(self):
         """Méthode principale d'extraction"""
         print(f"📄 Extraction des données de: {self.pdf_path.name}")
-        text = self.extract_text_from_pdf()
-        self.data = self.parse_inscription_data(text)
+        ocr_response = self.call_mistral()
+        print(ocr_response)
+        self.data = json.loads(ocr_response.document_annotation)
         return self.data
-
-    def print_summary(self):
-        """Affiche un résumé des données extraites"""
-        print("\n✅ Données extraites:")
-        print(f"  Entreprise: {self.data.get('nom_entreprise', 'N/A')}")
-        print(f"  SIRET: {self.data.get('siret', 'N/A')}")
-        print(f"  Adresse: {self.data.get('adresse_entreprise', 'N/A')}")
-        print(f"  Ville: {self.data.get('code_postal', 'N/A')} {self.data.get('ville', 'N/A')}")
-        print(f"  Téléphone: {self.data.get('telephone', 'N/A')}")
-        print(f"  Email: {self.data.get('email', 'N/A')}")
-        print(f"\n  Stagiaire: {self.data.get('prenom_stagiaire', 'N/A')} {self.data.get('nom_stagiaire', 'N/A')}")
-
 
 class AmmonExcelGenerator:
     """Générateur de fichier Excel pour l'import dans Ammon Campus"""
@@ -232,7 +182,7 @@ class AmmonExcelGenerator:
         # Ajouter une ligne pour chaque entreprise
         for i, data in enumerate(data_list, 1):
             # Préparer les données
-            siret = data.get('siret', '')
+            siret = data.get('N° de SIRET', '')
             if siret:
                 siret = siret.replace(' ', '')  # Nettoyer le SIRET
 
@@ -244,24 +194,24 @@ class AmmonExcelGenerator:
             row_data = [
                 ref_ext,                                    # cRefExt - VERSION COURTE
                 0,                                          # iDesactive
-                data.get('nom_entreprise', ''),            # SOC_cRaisonSociale
+                data.get('nom de l\'entreprise', ''),            # SOC_cRaisonSociale
                 'E',                                        # SOC_cType
                 -1,                                         # SOC_iEstSiege
                 'SGE',                                      # ← CHANGEMENT 1: était ''
                 siret,                                      # SOC_cSIRET
-                data.get('code_nafa', ''),                 # SOC_cNACE
+                data.get('Code NAFA', ''),                 # SOC_cNACE
                 -1,                                         # ADR_IESTADRCOURRIER
                 'PR',                                       # ← CHANGEMENT 2: était 'Siège'
-                data.get('adresse_entreprise', ''),        # ADR_cAdresse1
+                data.get('adresse de l\'entreprise', ''),        # ADR_cAdresse1
                 '',                                         # ADR_cAdresse2
                 '',                                         # ADR_cAdresse3
                 '',                                         # ADR_cAdresse4
-                data.get('code_postal', ''),               # ADR_cCodePostal
-                data.get('ville', ''),                     # ADR_cVille
-                self.get_pays_code(data.get('pays')),      # ← CHANGEMENT 3: utiliser get_pays_code()
+                data.get('Code postal', ''),               # ADR_cCodePostal
+                data.get('Ville', ''),                     # ADR_cVille
+                self.get_pays_code(data.get('Pays')),      # ← CHANGEMENT 3: utiliser get_pays_code()
                 '',                                         # ADR_cSiteWeb
-                data.get('telephone', ''),                 # ADR_cTel
-                data.get('email', ''),                     # ADR_cEmail
+                data.get('Tél', ''),                 # ADR_cTel
+                data.get('Email', ''),                     # ADR_cEmail
                 '',                                         # LIE_cCode
                 '',                                         # LIE_cLibelle
                 '',                                         # LIE_cRefext
