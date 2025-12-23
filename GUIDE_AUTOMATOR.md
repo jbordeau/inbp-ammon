@@ -20,16 +20,18 @@ INBP_PATH="$HOME/Documents/INBP"
 PYTHON_EXE="$INBP_PATH/.venv/bin/python3"
 SCRIPT_PATH="$INBP_PATH/main.py"
 OUTPUT_DIR="$HOME/Desktop/Imports_Ammon"
+FILES_INPUT="$@"
+LOG_FILE="/tmp/inbp_last_run.log"
 # ---------------------
 
 mkdir -p "$OUTPUT_DIR"
 
 # Notification de début
-osascript -e "display notification \"Lancement de l'extraction Mistral AI...\" with title \"INBP Automator\""
+osascript -e "display notification \"Analyse des PDFs en cours (Mistral AI)...\" with title \"INBP Automator\""
 
 # Exécution du script (on passe tous les fichiers glissés en argument)
 # On utilise le python du venv directement
-"$PYTHON_EXE" "$SCRIPT_PATH" -i "$1" -o "$OUTPUT_DIR"
+"$PYTHON_EXE" "$SCRIPT_PATH" -i "$FILES_INPUT" -o "$OUTPUT_DIR"
 
 if [ $? -eq 0 ]; then
     osascript -e "display notification \"Extraction terminée ! Fichiers dispos sur le bureau.\" with title \"INBP Automator\" sound name \"Glass\""
@@ -37,6 +39,7 @@ if [ $? -eq 0 ]; then
 else
     osascript -e "display notification \"Erreur lors de l'extraction. Vérifiez la connexion ou la clé API.\" with title \"INBP Automator\" sound name \"Basso\""
 fi
+open -a "Console" "$LOG_FILE"
 ```
 6. **Enregistrer** l'application sur votre Bureau sous le nom **"Extraire Inscription INBP"**.
 

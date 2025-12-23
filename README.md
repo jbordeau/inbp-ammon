@@ -2,6 +2,18 @@
 
 Outil d'intelligence artificielle (Mistral OCR) pour extraire automatiquement les données des bulletins d'inscription PDF vers des fichiers d'import Ammon Campus (Entreprises et Stagiaires).
 
+
+## 📋 Préparation (Important)
+
+Pour éviter de créer des doublons dans Ammon, vous devez mettre à jour les fichiers de référence dans le dossier `existants/` :
+
+1. **Exportez depuis Ammon** la liste des Entreprises et la liste des Personnes au format `.xls`.
+2. **Déposez-les** dans le dossier `existants/` de l'application.
+3. **Nomenclature** : Les fichiers doivent se terminer par `-VIE_ENTREPRISE.xls` et `-VIE_PERSONNE.xls`.
+
+Le script lira ces fichiers à chaque lancement pour vérifier si le SIRET ou le Stagiaire existe déjà.
+
+
 ## 🚀 Installation Rapide
 
 1. **Cloner le projet** dans `~/Documents/INBP/`
