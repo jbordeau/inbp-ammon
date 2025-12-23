@@ -75,7 +75,7 @@ class EntrepriseExcelGenerator:
             ws.append(row_data)
 
             # Afficher un résumé de chaque ligne ajoutée
-            entreprise_nom = data.get('nom_entreprise', 'N/A')
+            entreprise_nom = data.get('nom de l\'entreprise', 'N/A')
             siret_display = siret if siret else 'N/A'
             print(f"   {i}. {entreprise_nom} (SIRET: {siret_display})")
 

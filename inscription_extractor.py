@@ -3,15 +3,13 @@ import json
 from pathlib import Path
 from mistralai import Mistral
 
-api_key = "imHoWyGyaX0hHFhyHYvA5rc1IuRsE9Ob"
-client = Mistral(api_key=api_key)
-
 class InscriptionExtractor:
     """Extracteur de données depuis le bulletin d'inscription PDF"""
 
-    def __init__(self, pdf_path):
+    def __init__(self, pdf_path, client:Mistral):
         self.pdf_path = Path(pdf_path)
         self.data = {}
+        self.client = client
 
     def encode_file(self):
         with open(self.pdf_path, 'rb') as file:
@@ -19,7 +17,7 @@ class InscriptionExtractor:
 
     def call_mistral(self):
         base64_file = self.encode_file()
-        return client.ocr.process(
+        return self.client.ocr.process(
         model="mistral-ocr-latest",
         pages=[0],
         document={

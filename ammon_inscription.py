@@ -10,6 +10,9 @@ import sys
 import argparse
 from pathlib import Path
 from datetime import datetime
+from mistralai import Mistral
+from dotenv import load_dotenv
+import os
 
 from ammon_code_pays import PaysCode
 from ammon_generator_entreprise import EntrepriseExcelGenerator
@@ -49,12 +52,16 @@ def main():
 
     print(f"📁 {len(pdf_files)} fichier(s) PDF à traiter\n")
 
+    load_dotenv()
+    api_key = os.getenv('MISTRAL_API_KEY')
+    client = Mistral(api_key=api_key)
+
     # Extraire les données de tous les PDFs
     all_data = []
     for pdf_file in pdf_files:
         print(f"📄 Traitement: {pdf_file.name}")
         try:
-            extractor = InscriptionExtractor(pdf_file)
+            extractor = InscriptionExtractor(pdf_file,client=client)
             data = extractor.extract()
 
             # Vérifier que les données obligatoires sont présentes
