@@ -3,7 +3,7 @@
 Script d'extraction des données d'inscription depuis un PDF
 et génération du fichier Excel d'import pour Ammon Campus
 
-Usage: python3 ammon_inscription.py <fichier_pdf> [--output <dossier_sortie>]
+Usage: python3 main.py <fichier_pdf> [--output <dossier_sortie>]
 """
 
 import sys

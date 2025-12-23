@@ -28,7 +28,7 @@ pip install pypdf openpyxl
 ### Utilisation avec un seul PDF
 
 ```bash
-python3 ammon_inscription.py chemin/vers/bulletin.pdf
+python3 main.py chemin/vers/bulletin.pdf
 ```
 
 Le fichier Excel sera généré dans le répertoire courant avec 1 entreprise.
@@ -37,7 +37,7 @@ Le fichier Excel sera généré dans le répertoire courant avec 1 entreprise.
 
 ```bash
 # Pointer vers un dossier contenant plusieurs PDFs
-python3 ammon_inscription.py chemin/vers/dossier_pdfs/
+python3 main.py chemin/vers/dossier_pdfs/
 ```
 
 **🎯 Un SEUL fichier Excel sera généré** contenant toutes les entreprises extraites des PDFs du dossier.
@@ -46,23 +46,23 @@ python3 ammon_inscription.py chemin/vers/dossier_pdfs/
 
 ```bash
 # Spécifier un dossier de sortie
-python3 ammon_inscription.py dossier_pdfs/ --output ~/Downloads
+python3 main.py dossier_pdfs/ --output ~/Downloads
 
 # Utiliser le template Ammon (recommandé)
-python3 ammon_inscription.py dossier_pdfs/ --template Import_Entreprises.xlsx --output ~/Downloads
+python3 main.py dossier_pdfs/ --template Import_Entreprises.xlsx --output ~/Downloads
 ```
 
 ## 📋 Exemples concrets
 
 ### Exemple 1 : Un seul PDF
 ```bash
-python3 ammon_inscription.py "Bulletin_Dupont.pdf"
+python3 main.py "Bulletin_Dupont.pdf"
 # Génère : Import_Entreprise_20241221_143000.xlsx (1 entreprise)
 ```
 
 ### Exemple 2 : Plusieurs PDFs dans un dossier
 ```bash
-python3 ammon_inscription.py "Inscriptions_Janvier/"
+python3 main.py "Inscriptions_Janvier/"
 # Dossier contient : bulletin_01.pdf, bulletin_02.pdf, bulletin_03.pdf
 # Génère : Import_Entreprises_BATCH_20241221_143000.xlsx (3 entreprises)
 ```
@@ -75,7 +75,7 @@ mkdir ~/Bureau/Inscriptions_$(date +%Y%m%d)
 # 2. Y déposer tous les PDFs reçus par email
 
 # 3. Lancer l'extraction
-python3 ammon_inscription.py ~/Bureau/Inscriptions_$(date +%Y%m%d) \
+python3 main.py ~/Bureau/Inscriptions_$(date +%Y%m%d) \
     --template ~/Documents/INBP/Import_Entreprises.xlsx \
     --output ~/Bureau/Imports_Ammon
 
