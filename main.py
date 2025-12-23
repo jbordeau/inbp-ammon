@@ -60,54 +60,66 @@ def main():
 
     existants = ExistantsService(folder_path="./existants")
 
-    # Extraire les données de tous les PDFs
-    all_data = []
+    # Listes dissociées pour la génération
+    entreprises_to_gen = []
+    personnes_to_gen = []
+
     for pdf_file in pdf_files:
         print(f"📄 Traitement: {pdf_file.name}")
         try:
-            extractor = InscriptionExtractor(pdf_file,client=client)
+            extractor = InscriptionExtractor(pdf_file, client=client)
             inscription = extractor.extract()
             ent = inscription.entreprise
+            stg = inscription.stagiaire
             ent.display_summary()
 
-            # 2. Vérification des doublons
-            existing_ref = existants.get_existing_ref(ent.siret)
-            if existing_ref:
-                print(f"   🚫 L'entreprise existe déjà dans Ammon (Ref: {existing_ref}). Ignorée.")
-                continue
+            # --- 1. Gestion de l'Entreprise ---
+            existing_ent_ref = existants.get_existing_entreprise_ref(ent.siret)
+            if existing_ent_ref:
+                print(f"   ℹ️  L'entreprise existe déjà (Ref: {existing_ent_ref}).")
+                # On met à jour la ref_ext du stagiaire pour pointer vers l'existant
+                # Important pour que le stagiaire soit rattaché à la bonne fiche dans Ammon
+                ent.ref_ext = existing_ent_ref
+            else:
+                entreprises_to_gen.append(inscription)
 
-            all_data.append(inscription)
+            # --- 2. Gestion du Stagiaire ---
+            existing_stg_ref = existants.get_existing_personne_ref(stg.nom, stg.prenom)
+            if existing_stg_ref:
+                print(f"   🚫 Le stagiaire {stg.prenom} {stg.nom} existe déjà (Ref: {existing_stg_ref}). Ignoré.")
+            else:
+                personnes_to_gen.append(inscription)
+
         except Exception as e:
             print(f"   ❌ Erreur lors du traitement: {e}")
             continue
 
-    if not all_data:
-        print("\n❌ Aucune donnée n'a pu être extraite")
-        sys.exit(1)
+    if not entreprises_to_gen and not personnes_to_gen:
+        print("\nℹ️ Aucune nouvelle donnée à générer (tout existe déjà).")
+        sys.exit(0)
 
-    print(f"\n✅ {len(all_data)} inscription(s) extraite(s) avec succès\n")
+    print(f"\n✅ {len(entreprises_to_gen)} entreprise(s) et {len(personnes_to_gen)} stagiaire(s) à générer\n")
 
-    # Génération du fichier Excel avec toutes les données
+    # Génération des fichiers
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Nom du fichier de sortie
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    ent_output = output_dir / f"Import_Entreprise_{timestamp}.xlsx"
-    personne_output = output_dir / f"Import_Stagiaires_{timestamp}.xlsx"
 
     pays_code = PaysCode(template_path=args.template)
 
-    # Génération Entreprises
-    generator = EntrepriseExcelGenerator(pays_code=pays_code)
-    generator.create_entreprises_excel(all_data, ent_output)
+    # Génération Entreprises (uniquement les nouvelles)
+    if entreprises_to_gen:
+        ent_output = output_dir / f"Import_Entreprise_{timestamp}.xlsx"
+        generator = EntrepriseExcelGenerator(pays_code=pays_code)
+        generator.create_entreprises_excel(entreprises_to_gen, ent_output)
 
-    # Génération Stagiaires
-    stg_gen = PersonneExcelGenerator(pays_code=pays_code)
-    stg_gen.create_personnes_excel(all_data, personne_output)
+    # Génération Stagiaires (uniquement les nouveaux, rattachés soit au nouveau soit à l'existant)
+    if personnes_to_gen:
+        personne_output = output_dir / f"Import_Stagiaires_{timestamp}.xlsx"
+        stg_gen = PersonneExcelGenerator(pays_code=pays_code)
+        stg_gen.create_personnes_excel(personnes_to_gen, personne_output)
 
-
-print("✨ Traitement terminé avec succès!")
+    print("✨ Traitement terminé avec succès!")
 
 
 if __name__ == '__main__':
