@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*' # Se déclenche quand tu crées un tag (ex: v1.0.0)
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-latest # On utilise macOS pour garantir la compatibilité
