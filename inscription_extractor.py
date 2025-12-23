@@ -2,13 +2,13 @@ import base64
 import json
 from pathlib import Path
 from mistralai import Mistral
+from models import Inscription, Entreprise, Stagiaire
 
 class InscriptionExtractor:
     """Extracteur de données depuis le bulletin d'inscription PDF"""
 
     def __init__(self, pdf_path, client:Mistral):
         self.pdf_path = Path(pdf_path)
-        self.data = {}
         self.client = client
 
     def encode_file(self):
@@ -127,6 +127,33 @@ class InscriptionExtractor:
         """Méthode principale d'extraction"""
         print(f"📄 Extraction des données de: {self.pdf_path.name}")
         ocr_response = self.call_mistral()
-        print(ocr_response)
-        self.data = json.loads(ocr_response.document_annotation)
-        return self.data
+        raw_data = json.loads(ocr_response.document_annotation)
+
+        # Mapping du JSON vers les objets
+        entreprise = Entreprise(
+            nom=raw_data.get("nom de l'entreprise", ""),
+            adresse=raw_data.get("adresse de l'entreprise", ""),
+            code_postal=raw_data.get("Code postal", ""),
+            ville=raw_data.get("Ville", ""),
+            pays=raw_data.get("Pays", ""),
+            siret=raw_data.get("N° de SIRET", ""),
+            code_nafa=raw_data.get("Code NAFA", ""),
+            telephone=raw_data.get("Tél", ""),
+            email=raw_data.get("Email", ""),
+            date_entree=raw_data.get("Date d'entrée dans l'entreprise", "")
+        )
+
+        stagiaire = Stagiaire(
+            civilite=raw_data.get("Civilité", ""),
+            nom=raw_data.get("Nom du stagiaire", ""),
+            prenom=raw_data.get("Prénom du stagiaire", ""),
+            adresse=raw_data.get("Adresse du stagiaire", ""),
+            code_postal=raw_data.get("Code postal du stagiaire", ""),
+            ville=raw_data.get("Ville du stagiaire", ""),
+            pays=raw_data.get("Pays du stagiare", ""),
+            portable=raw_data.get("Portable du stagiaire", ""),
+            email=raw_data.get("Email du stagiaire", ""),
+            date_naissance=raw_data.get("Date de naissance", "")
+        )
+
+        return Inscription(entreprise=entreprise, stagiaire=stagiaire)

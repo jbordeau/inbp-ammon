@@ -34,11 +34,13 @@ class EntrepriseExcelGenerator:
         print(f"📊 Génération du fichier Excel avec {len(data_list)} entreprise(s)...\n")
 
         # Ajouter une ligne pour chaque entreprise
-        for i, data in enumerate(data_list, 1):
+        for i, inscription in enumerate(data_list, 1):
+            ent = inscription.entreprise  # Accès direct à l'objet entreprise
+
             # Préparer les données
-            siret = data.get('N° de SIRET', '')
+            siret = ent.siret
             if siret:
-                siret = siret.replace(' ', '')  # Nettoyer le SIRET
+                siret = siret.replace(' ', '')
 
             # Générer une référence externe unique
             date_str = datetime.now().strftime('%Y%m%d')  # Format YYYYMMDD
@@ -46,26 +48,26 @@ class EntrepriseExcelGenerator:
 
             # Construire la ligne de données
             row_data = [
-                ref_ext,                                    # cRefExt - VERSION COURTE
-                0,                                          # iDesactive
-                data.get('nom de l\'entreprise', ''),            # SOC_cRaisonSociale
-                'E',                                        # SOC_cType
-                -1,                                         # SOC_iEstSiege
-                'SGE',                                      # ← CHANGEMENT 1: était ''
-                siret,                                      # SOC_cSIRET
-                data.get('Code NAFA', ''),                 # SOC_cNACE
-                -1,                                         # ADR_IESTADRCOURRIER
-                'PR',                                       # ← CHANGEMENT 2: était 'Siège'
-                data.get('adresse de l\'entreprise', ''),        # ADR_cAdresse1
-                '',                                         # ADR_cAdresse2
-                '',                                         # ADR_cAdresse3
-                '',                                         # ADR_cAdresse4
-                data.get('Code postal', ''),               # ADR_cCodePostal
-                data.get('Ville', ''),                     # ADR_cVille
-                self.pays_codes.get_pays_code(data.get('Pays')),      # ← CHANGEMENT 3: utiliser get_pays_code()
-                '',                                         # ADR_cSiteWeb
-                data.get('Tél', ''),                 # ADR_cTel
-                data.get('Email', ''),                     # ADR_cEmail
+                ref_ext,
+                0,
+                ent.nom,
+                'E',
+                -1,
+                'SGE',
+                siret,
+                ent.code_nafa,
+                -1,
+                'PR',
+                ent.adresse,
+                '',
+                '',
+                '',
+                ent.code_postal,
+                ent.ville,
+                self.pays_codes.get_pays_code(ent.pays),
+                '',
+                ent.telephone,
+                ent.email,
                 '',                                         # LIE_cCode
                 '',                                         # LIE_cLibelle
                 '',                                         # LIE_cRefext
@@ -75,7 +77,7 @@ class EntrepriseExcelGenerator:
             ws.append(row_data)
 
             # Afficher un résumé de chaque ligne ajoutée
-            entreprise_nom = data.get('nom de l\'entreprise', 'N/A')
+            entreprise_nom = ent.nom if ent.nom else 'N/A'
             siret_display = siret if siret else 'N/A'
             print(f"   {i}. {entreprise_nom} (SIRET: {siret_display})")
 
