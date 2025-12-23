@@ -1,0 +1,47 @@
+name: Create Release Zip
+
+on:
+  push:
+    tags:
+      - 'v*' # Se déclenche quand tu crées un tag (ex: v1.0.0)
+
+jobs:
+  build:
+    runs-on: macos-latest # On utilise macOS pour garantir la compatibilité
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Prepare release folder
+        run: |
+          mkdir INBP_Release
+          cp -R *.py requirements.txt README.md GUIDE_AUTOMATOR.md Template_Import_Entreprises.xlsx INBP_Release/
+          mkdir -p INBP_Release/input INBP_Release/output INBP_Release/existants
+          
+          # Création d'un .env template (vide) pour l'utilisateur
+          echo "MISTRAL_API_KEY=" > INBP_Release/.env
+          
+          # Création du script d'installation automatique
+          cat <<EOF > INBP_Release/INSTALLER_MAC.command
+          #!/bin/bash
+          cd "\$(dirname "\$0")"
+          echo "🚀 Installation de l'outil INBP..."
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "✅ Installation terminée !"
+          echo "⚠️ N'oubliez pas d'ouvrir le fichier .env pour y coller votre clé Mistral."
+          read -p "Appuyez sur Entrée pour fermer..."
+          EOF
+          chmod +x INBP_Release/INSTALLER_MAC.command
+
+      - name: Zip Release
+        run: zip -r inbp-tool-${{ github.ref_name }}.zip INBP_Release/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: inbp-tool-${{ github.ref_name }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
