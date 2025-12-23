@@ -18,6 +18,7 @@ from ammon_code_pays import PaysCode
 from ammon_generator_entreprise import EntrepriseExcelGenerator
 from ammon_generator_personne import PersonneExcelGenerator
 from inscription_extractor import InscriptionExtractor
+from ammon_existants_service import ExistantsService
 
 
 def main():
@@ -57,6 +58,8 @@ def main():
     api_key = os.getenv('MISTRAL_API_KEY')
     client = Mistral(api_key=api_key)
 
+    existants = ExistantsService(folder_path="./existants")
+
     # Extraire les données de tous les PDFs
     all_data = []
     for pdf_file in pdf_files:
@@ -64,7 +67,15 @@ def main():
         try:
             extractor = InscriptionExtractor(pdf_file,client=client)
             inscription = extractor.extract()
-            inscription.entreprise.display_summary()
+            ent = inscription.entreprise
+            ent.display_summary()
+
+            # 2. Vérification des doublons
+            existing_ref = existants.get_existing_ref(ent.siret)
+            if existing_ref:
+                print(f"   🚫 L'entreprise existe déjà dans Ammon (Ref: {existing_ref}). Ignorée.")
+                continue
+
             all_data.append(inscription)
         except Exception as e:
             print(f"   ❌ Erreur lors du traitement: {e}")

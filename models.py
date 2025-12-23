@@ -24,7 +24,7 @@ class Entreprise:
 
         # 2. Génération de la référence externe
         date_str = datetime.now().strftime('%Y%m%d')
-        self.ref_ext = f"ENTRE_{self.siret}_{date_str}" if self.siret else f"INBP_{date_str}"
+        self.ref_ext = f"ENTRE_{self.siret}_{date_str}" if self.siret else f"ENTRE_{date_str}"
 
     @property
     def is_valid(self) -> bool:
