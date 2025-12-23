@@ -51,6 +51,16 @@ class InscriptionExtractor:
                     "type": "object",
                     "title": "StructuredData",
                     "required": [
+                        "Civilité",
+                        "Nom du stagiaire",
+                        "Prénom du stagiaire",
+                        "Adresse du stagiaire",
+                        "Code postal du stagiaire",
+                        "Ville du stagiaire",
+                        "Pays du stagiare",
+                        "Portable du stagiaire",
+                        "Email du stagiaire",
+                        "Date de naissance",
                         "nom de l'entreprise",
                         "adresse de l'entreprise",
                         "Code postal",
@@ -63,6 +73,36 @@ class InscriptionExtractor:
                         "Email"
                     ],
                     "properties": {
+                        "Civilité": {
+                            "type": "string"
+                        },
+                        "Nom du stagiare": {
+                            "type": "string"
+                        },
+                        "Prénom du stagiaire": {
+                            "type": "string"
+                        },
+                        "Afresse du stagiaire": {
+                            "type": "string"
+                        },
+                        "Code postal du stagiaire": {
+                            "type": "string"
+                        },
+                        "Ville du stagiaire": {
+                            "type": "string"
+                        },
+                        "Pays du stagiaire": {
+                            "type": "string"
+                        },
+                        "Portable du stagiaire": {
+                            "type": "string"
+                        },
+                        "Email du stagiaire": {
+                            "type": "string"
+                        },
+                        "Date de naissance": {
+                            "type": "string"
+                        },
                         "nom de l'entreprise": {
                             "type": "string"
                         },
