@@ -16,6 +16,7 @@ import os
 
 from ammon_code_pays import PaysCode
 from ammon_generator_entreprise import EntrepriseExcelGenerator
+from ammon_generator_personne import PersonneExcelGenerator
 from inscription_extractor import InscriptionExtractor
 
 
@@ -81,17 +82,21 @@ def main():
 
     # Nom du fichier de sortie
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    if len(all_data) == 1:
-        output_filename = f"Import_Entreprise_{timestamp}.xlsx"
-    else:
-        output_filename = f"Import_Entreprises_BATCH_{timestamp}.xlsx"
-    output_path = output_dir / output_filename
+    ent_output = output_dir / f"Import_Entreprise_{timestamp}.xlsx"
+    personne_output = output_dir / f"Import_Stagiaires_{timestamp}.xlsx"
 
     pays_code = PaysCode(template_path=args.template)
-    generator = EntrepriseExcelGenerator(pays_code=pays_code)
-    generator.create_entreprises_excel(all_data, output_path)
 
-    print("✨ Traitement terminé avec succès!")
+    # Génération Entreprises
+    generator = EntrepriseExcelGenerator(pays_code=pays_code)
+    generator.create_entreprises_excel(all_data, ent_output)
+
+    # Génération Stagiaires
+    stg_gen = PersonneExcelGenerator(pays_code=pays_code)
+    stg_gen.create_personnes_excel(all_data, personne_output)
+
+
+print("✨ Traitement terminé avec succès!")
 
 
 if __name__ == '__main__':

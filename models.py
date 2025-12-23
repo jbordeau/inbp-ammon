@@ -24,7 +24,7 @@ class Entreprise:
 
         # 2. Génération de la référence externe
         date_str = datetime.now().strftime('%Y%m%d')
-        self.ref_ext = f"INBP_{self.siret}_{date_str}" if self.siret else f"INBP_{date_str}"
+        self.ref_ext = f"ENTRE_{self.siret}_{date_str}" if self.siret else f"INBP_{date_str}"
 
     @property
     def is_valid(self) -> bool:
@@ -54,7 +54,33 @@ class Stagiaire:
     portable: str
     email: str
     date_naissance: str
+    ref_ext: str = field(init=False)
 
+    def __post_init__(self):
+        # 1. Nettoyage du portable (enlève espaces et points)
+        if self.portable:
+            self.portable = str(self.portable).replace(' ', '').replace('.', '')
+
+        # 2. Génération de la référence externe unique
+        timestamp = datetime.now().strftime('%Y%m%d')
+        nom_clean = self.nom.replace(' ', '')[:5].upper()
+        self.ref_ext = f"PERS_{nom_clean}_{timestamp}"
+
+    @property
+    def sexe(self) -> str:
+        """Déduit le sexe à partir de la civilité"""
+        c = str(self.civilite).upper()
+        if 'MME' in c or 'MLLE' in c:
+            return 'F'
+        return 'M'
+
+    @property
+    def civilite_ammon(self) -> str:
+        """Normalise la civilité pour Ammon (M. ou MME)"""
+        c = str(self.civilite).upper()
+        if 'MME' in c or 'MLLE' in c:
+            return 'MME'
+        return 'M.'
 
 @dataclass
 class Inscription:
