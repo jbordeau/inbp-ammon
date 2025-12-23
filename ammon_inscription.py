@@ -63,16 +63,7 @@ def main():
         try:
             extractor = InscriptionExtractor(pdf_file,client=client)
             inscription = extractor.extract()
-
-            # Vérifier que les données obligatoires sont présentes via l'objet
-            ent = inscription.entreprise
-            if not ent.nom:
-                print("   ⚠️  Nom de l'entreprise non trouvé")
-            if not ent.siret:
-                print("   ⚠️  SIRET non trouvé")
-            else:
-                print(f"   ✅ {ent.nom} - SIRET: {ent.siret}")
-
+            inscription.entreprise.display_summary()
             all_data.append(inscription)
         except Exception as e:
             print(f"   ❌ Erreur lors du traitement: {e}")

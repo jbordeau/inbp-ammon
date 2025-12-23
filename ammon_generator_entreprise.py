@@ -37,24 +37,15 @@ class EntrepriseExcelGenerator:
         for i, inscription in enumerate(data_list, 1):
             ent = inscription.entreprise  # Accès direct à l'objet entreprise
 
-            # Préparer les données
-            siret = ent.siret
-            if siret:
-                siret = siret.replace(' ', '')
-
-            # Générer une référence externe unique
-            date_str = datetime.now().strftime('%Y%m%d')  # Format YYYYMMDD
-            ref_ext = f"INBP_{siret}_{date_str}" if siret else f"INBP_{date_str}"
-
             # Construire la ligne de données
             row_data = [
-                ref_ext,
+                ent.ref_ext,
                 0,
                 ent.nom,
                 'E',
                 -1,
                 'SGE',
-                siret,
+                ent.siret,
                 ent.code_nafa,
                 -1,
                 'PR',
@@ -78,7 +69,7 @@ class EntrepriseExcelGenerator:
 
             # Afficher un résumé de chaque ligne ajoutée
             entreprise_nom = ent.nom if ent.nom else 'N/A'
-            siret_display = siret if siret else 'N/A'
+            siret_display = ent.siret if ent.siret else 'N/A'
             print(f"   {i}. {entreprise_nom} (SIRET: {siret_display})")
 
         # Sauvegarder le fichier
