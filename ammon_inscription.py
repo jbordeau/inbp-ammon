@@ -17,7 +17,6 @@ import json
 from mistralai import Mistral
 
 api_key = "imHoWyGyaX0hHFhyHYvA5rc1IuRsE9Ob"
-
 client = Mistral(api_key=api_key)
 
 
@@ -108,7 +107,7 @@ class InscriptionExtractor:
         self.data = json.loads(ocr_response.document_annotation)
         return self.data
 
-class AmmonExcelGenerator:
+class EntrepriseExcelGenerator:
     """Générateur de fichier Excel pour l'import dans Ammon Campus"""
 
     def __init__(self, template_path=None):
@@ -307,7 +306,7 @@ def main():
         output_filename = f"Import_Entreprises_BATCH_{timestamp}.xlsx"
     output_path = output_dir / output_filename
 
-    generator = AmmonExcelGenerator(template_path=args.template)
+    generator = EntrepriseExcelGenerator(template_path=args.template)
     generator.create_entreprises_excel(all_data, output_path)
 
     print("✨ Traitement terminé avec succès!")
