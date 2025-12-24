@@ -47,11 +47,11 @@ class ExistantsService:
             self.nom_prenom_to_ref = pd.Series(df.cRefExt.values, index=df.key).to_dict()
             print(f"✅ {len(self.nom_prenom_to_ref)} personnes chargées ({filename})")
 
-    def get_existing_entreprise_ref(self, siret: str) -> str | None:
+    def get_existing_entreprise_ref(self, siret: str) -> str:
         if not siret: return None
         return self.siret_to_ref.get(str(siret).replace(' ', ''))
 
-    def get_existing_personne_ref(self, nom: str, prenom: str) -> str | None:
+    def get_existing_personne_ref(self, nom: str, prenom: str) -> str:
         if not nom or not prenom: return None
         # Même normalisation qu'au chargement
         key = (str(nom) + str(prenom)).replace(' ', '').upper()

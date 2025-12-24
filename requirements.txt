@@ -1,3 +1,4 @@
+urllib3=1.26.15
 mistralai>=1.10.0
 python-dotenv>=1.2.1
 openpyxl>=3.1.5

@@ -74,21 +74,23 @@ def main():
             ent.display_summary()
 
             # --- 1. Gestion de l'Entreprise ---
-            existing_ent_ref = existants.get_existing_entreprise_ref(ent.siret)
-            if existing_ent_ref:
-                print(f"   ℹ️  L'entreprise existe déjà (Ref: {existing_ent_ref}).")
-                # On met à jour la ref_ext du stagiaire pour pointer vers l'existant
-                # Important pour que le stagiaire soit rattaché à la bonne fiche dans Ammon
-                ent.ref_ext = existing_ent_ref
-            else:
-                entreprises_to_gen.append(inscription)
+            if ent.is_valid:
+                existing_ent_ref = existants.get_existing_entreprise_ref(ent.siret)
+                if existing_ent_ref:
+                    print(f"   ℹ️  L'entreprise existe déjà (Ref: {existing_ent_ref}).")
+                    # On met à jour la ref_ext du stagiaire pour pointer vers l'existant
+                    # Important pour que le stagiaire soit rattaché à la bonne fiche dans Ammon
+                    ent.ref_ext = existing_ent_ref
+                else:
+                    entreprises_to_gen.append(inscription)
 
             # --- 2. Gestion du Stagiaire ---
-            existing_stg_ref = existants.get_existing_personne_ref(stg.nom, stg.prenom)
-            if existing_stg_ref:
-                print(f"   🚫 Le stagiaire {stg.prenom} {stg.nom} existe déjà (Ref: {existing_stg_ref}). Ignoré.")
-            else:
-                personnes_to_gen.append(inscription)
+            if stg.is_valid:
+                existing_stg_ref = existants.get_existing_personne_ref(stg.nom, stg.prenom)
+                if existing_stg_ref:
+                    print(f"   🚫 Le stagiaire {stg.prenom} {stg.nom} existe déjà (Ref: {existing_stg_ref}). Ignoré.")
+                else:
+                    personnes_to_gen.append(inscription)
 
         except Exception as e:
             print(f"   ❌ Erreur lors du traitement: {e}")

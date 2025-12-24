@@ -67,6 +67,11 @@ class Stagiaire:
         self.ref_ext = f"PERS_{nom_clean}_{timestamp}"
 
     @property
+    def is_valid(self) -> bool:
+        """Vérifie si les données vitales sont présentes"""
+        return bool(self.nom and self.prenom)
+
+    @property
     def sexe(self) -> str:
         """Déduit le sexe à partir de la civilité"""
         c = str(self.civilite).upper()
